@@ -5,6 +5,7 @@ import com.jesz.createdieselgenerators.blocks.BlockRegistry;
 import com.jesz.createdieselgenerators.blocks.PoweredEngineShaftBlock;
 import com.jesz.createdieselgenerators.compat.computercraft.CCProxy;
 import com.jesz.createdieselgenerators.config.ConfigRegistry;
+import com.jesz.createdieselgenerators.other.FuelTypeManager;
 import com.jesz.createdieselgenerators.sounds.SoundRegistry;
 import com.simibubi.create.compat.computercraft.AbstractComputerBehaviour;
 import com.simibubi.create.content.contraptions.bearing.WindmillBearingBlockEntity;
@@ -26,6 +27,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
+import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
@@ -41,6 +43,7 @@ import net.minecraftforge.fluids.FluidStack;
 import java.lang.ref.WeakReference;
 import java.util.List;
 
+import static com.jesz.createdieselgenerators.blocks.DieselGeneratorBlock.POWERED;
 import static com.jesz.createdieselgenerators.blocks.HugeDieselEngineBlock.FACING;
 import static com.simibubi.create.content.kinetics.base.RotatedPillarKineticBlock.AXIS;
 
@@ -82,14 +85,17 @@ public class HugeDieselEngineBlockEntity extends SmartBlockEntity implements IHa
         PoweredEngineShaftBlockEntity shaft = getShaft();
         if (shaft == null)
             return;
-        validFuel = CreateDieselGenerators.getGeneratedSpeed(tank.getPrimaryHandler().getFluid()) != 0;
+        if(getBlockState().getValue(POWERED))
+            validFuel = false;
+        else
+            validFuel = FuelTypeManager.getGeneratedSpeed(this, tank.getPrimaryHandler().getFluid().getFluid()) != 0;
         partialSecond++;
         if(partialSecond >= 20){
             partialSecond = 0;
             if(validFuel) {
-                if(tank.getPrimaryHandler().getFluid().getAmount() >= CreateDieselGenerators.getBurnRate(tank.getPrimaryHandler().getFluid()))
+                if(tank.getPrimaryHandler().getFluid().getAmount() >= FuelTypeManager.getBurnRate(this, tank.getPrimaryHandler().getFluid().getFluid()))
                     tank.getPrimaryHandler().setFluid(FluidHelper.copyStackWithAmount(tank.getPrimaryHandler().getFluid(),
-                            tank.getPrimaryHandler().getFluid().getAmount() - CreateDieselGenerators.getBurnRate(tank.getPrimaryHandler().getFluid())));
+                            tank.getPrimaryHandler().getFluid().getAmount() - FuelTypeManager.getBurnRate(this, tank.getPrimaryHandler().getFluid().getFluid())));
                 else
                     tank.getPrimaryHandler().setFluid(FluidStack.EMPTY);
             }
@@ -100,7 +106,7 @@ public class HugeDieselEngineBlockEntity extends SmartBlockEntity implements IHa
                 onDirectionChanged();
                 return;
             }
-            shaft.update(worldPosition, movementDirection.get() == WindmillBearingBlockEntity.RotationDirection.CLOCKWISE ? 1 : -1, CreateDieselGenerators.getGeneratedStress(tank.getPrimaryHandler().getFluid())*ConfigRegistry.HUGE_ENGINE_MULTIPLIER.get().floatValue(), CreateDieselGenerators.getGeneratedSpeed(tank.getPrimaryHandler().getFluid()));
+            shaft.update(worldPosition, movementDirection.get() == WindmillBearingBlockEntity.RotationDirection.CLOCKWISE ? 1 : -1, FuelTypeManager.getGeneratedStress(this, tank.getPrimaryHandler().getFluid().getFluid()), FuelTypeManager.getGeneratedSpeed(this, tank.getPrimaryHandler().getFluid().getFluid()));
             if(!level.isClientSide)
                 return;
             Float angle = getTargetAngle();
@@ -112,8 +118,7 @@ public class HugeDieselEngineBlockEntity extends SmartBlockEntity implements IHa
             float shaftR = facing == Direction.NORTH ? 180 : facing == Direction.SOUTH ? 0 : facing == Direction.EAST ? 0 : facing == Direction.WEST ? 180 : facing == Direction.DOWN ? 90 : -90;
 
             if((oldAngle+shaftR) % 360 > (angle+shaftR) % 360) {
-                level.playLocalSound(worldPosition.getX(), worldPosition.getY(), worldPosition.getZ(), SoundRegistry.DIESEL_ENGINE_SOUND.get(), SoundSource.BLOCKS, 3f,1.08f, false);
-                level.playLocalSound(worldPosition.getX(), worldPosition.getY(), worldPosition.getZ(), SoundEvents.CANDLE_EXTINGUISH, SoundSource.BLOCKS, 3f, 1.08f, false);
+                level.playLocalSound(worldPosition.getX(), worldPosition.getY(), worldPosition.getZ(), SoundRegistry.DIESEL_ENGINE_SOUND.get(), SoundSource.BLOCKS, 1f,1f, false);
             }
             oldAngle = angle;
 
@@ -166,8 +171,9 @@ public class HugeDieselEngineBlockEntity extends SmartBlockEntity implements IHa
 
     @Override
     public <T> LazyOptional<T> getCapability(Capability<T> cap, Direction side) {
-
-        if (cap == ForgeCapabilities.FLUID_HANDLER && getBlockState().getValue(BooleanProperty.create(side.toString())))
+        if(cap == ForgeCapabilities.FLUID_HANDLER && side == null)
+            return tank.getCapability().cast();
+        else if (cap == ForgeCapabilities.FLUID_HANDLER && getBlockState().getValue(BooleanProperty.create(side.toString())))
             if(side.getAxis() != getBlockState().getValue(FACING).getAxis())
                 return tank.getCapability().cast();
 
@@ -181,7 +187,7 @@ public class HugeDieselEngineBlockEntity extends SmartBlockEntity implements IHa
         PoweredEngineShaftBlockEntity shaft = getShaft();
         if(shaft == null)
             return false;
-        float stressBase = CreateDieselGenerators.getGeneratedStress(tank.getPrimaryHandler().getFluid())* ConfigRegistry.HUGE_ENGINE_MULTIPLIER.get().floatValue();
+        float stressBase = FuelTypeManager.getGeneratedStress(this, tank.getPrimaryHandler().getFluid().getFluid());
         if (Mth.equal(stressBase, 0))
             return false;
         Lang.translate("gui.goggles.generator_stats")

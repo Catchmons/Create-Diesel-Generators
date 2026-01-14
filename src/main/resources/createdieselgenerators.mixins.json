@@ -3,10 +3,11 @@
   "minVersion": "0.8",
   "priority": 1177,
   "package": "com.jesz.createdieselgenerators.mixins",
+  "refmap": "createdieselgenerators.refmap.json",
   "compatibilityLevel": "JAVA_17",
   "mixins": [
-    "ExplosionMixin",
-    "ItemEntityMixin"
+    "EntityMixin",
+    "MountedFluidStorageMixin"
   ],
   "injectors": {
     "defaultRequire": 1

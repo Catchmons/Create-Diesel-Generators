@@ -1,17 +1,16 @@
 package com.jesz.createdieselgenerators.blocks;
 
 import com.jesz.createdieselgenerators.CreativeTab;
-import com.jesz.createdieselgenerators.blocks.ct.DistillationTankCTBehavior;
 import com.jesz.createdieselgenerators.blocks.ct.DistillationTankModel;
 import com.jesz.createdieselgenerators.blocks.ct.ModularDieselEngineCTBehavior;
+import com.jesz.createdieselgenerators.blocks.ct.OilBarrelCTBehavior;
+import com.jesz.createdieselgenerators.contraption.DieselEngineMovementBehaviour;
 import com.jesz.createdieselgenerators.contraption.PumpjackBearingBMovementBehaviour;
 import com.jesz.createdieselgenerators.contraption.PumpjackHeadMovementBehaviour;
 import com.jesz.createdieselgenerators.items.CanisterBlockItem;
+import com.jesz.createdieselgenerators.items.MultiBlockContainerBlockItem;
 import com.jesz.createdieselgenerators.other.EngineStateDisplaySource;
 import com.jesz.createdieselgenerators.other.OilAmountDisplaySource;
-import com.simibubi.create.content.fluids.tank.FluidTankGenerator;
-import com.simibubi.create.content.fluids.tank.FluidTankModel;
-import com.simibubi.create.foundation.data.BlockStateGen;
 import com.simibubi.create.foundation.data.CreateRegistrate;
 import com.simibubi.create.foundation.data.SharedProperties;
 import com.tterrag.registrate.util.entry.BlockEntry;
@@ -31,13 +30,13 @@ public class BlockRegistry {
     static {
         REGISTRATE.creativeModeTab(() -> CreativeTab.CREATIVE_TAB);
     }
-public static final BlockEntry<DieselGeneratorBlock> DIESEL_ENGINE = REGISTRATE.block("diesel_engine", Material.METAL, DieselGeneratorBlock::new)
+    public static final BlockEntry<DieselGeneratorBlock> DIESEL_ENGINE = REGISTRATE.block("diesel_engine", Material.METAL, DieselGeneratorBlock::new)
             .properties(p -> p.color(MaterialColor.COLOR_YELLOW))
             .properties(p -> p.sound(SoundType.NETHERITE_BLOCK))
             .onRegister(assignDataBehaviour(new EngineStateDisplaySource()))
             .properties(p -> p.noOcclusion())
             .properties(p -> p.strength(3f))
-            .blockstate(BlockStateGen.horizontalBlockProvider(true))
+            .onRegister(movementBehaviour(new DieselEngineMovementBehaviour()))
             .simpleItem()
             .register();
     public static final BlockEntry<LargeDieselGeneratorBlock> MODULAR_DIESEL_ENGINE = REGISTRATE.block("large_diesel_engine", Material.METAL, LargeDieselGeneratorBlock::new)
@@ -47,7 +46,7 @@ public static final BlockEntry<DieselGeneratorBlock> DIESEL_ENGINE = REGISTRATE.
             .properties(p -> p.noOcclusion())
             .properties(p -> p.strength(3f))
             .onRegister(connectedTextures(ModularDieselEngineCTBehavior::new))
-            .blockstate(BlockStateGen.horizontalBlockProvider(true))
+            .onRegister(movementBehaviour(new DieselEngineMovementBehaviour()))
             .simpleItem()
             .register();
     public static final BlockEntry<HugeDieselEngineBlock> HUGE_DIESEL_ENGINE = REGISTRATE.block("huge_diesel_engine", Material.METAL, HugeDieselEngineBlock::new)
@@ -56,21 +55,18 @@ public static final BlockEntry<DieselGeneratorBlock> DIESEL_ENGINE = REGISTRATE.
             .onRegister(assignDataBehaviour(new EngineStateDisplaySource()))
             .properties(p -> p.noOcclusion())
             .properties(p -> p.strength(3f))
-            .blockstate(BlockStateGen.horizontalBlockProvider(true))
             .simpleItem()
             .register();
     public static final BlockEntry<PoweredEngineShaftBlock> POWERED_ENGINE_SHAFT = REGISTRATE.block("powered_engine_shaft", Material.STONE, PoweredEngineShaftBlock::new)
             .initialProperties(SharedProperties::stone)
             .properties(p -> p.color(MaterialColor.METAL))
             .transform(pickaxeOnly())
-            .blockstate(BlockStateGen.axisBlockProvider(false))
             .register();
     public static final BlockEntry<BasinLidBlock> BASIN_LID = REGISTRATE.block("basin_lid", Material.STONE, BasinLidBlock::new)
             .properties(p -> p.color(MaterialColor.COLOR_GRAY))
             .properties(p -> p.sound(SoundType.NETHERITE_BLOCK))
             .properties(p -> p.noOcclusion())
             .properties(p -> p.strength(3f))
-            .blockstate(BlockStateGen.horizontalBlockProvider(true))
             .simpleItem()
             .register();
 
@@ -79,7 +75,6 @@ public static final BlockEntry<DieselGeneratorBlock> DIESEL_ENGINE = REGISTRATE.
             .properties(p -> p.sound(SoundType.NETHERITE_BLOCK))
             .properties(p -> p.noOcclusion())
             .properties(p -> p.strength(3f))
-            .blockstate(BlockStateGen.horizontalBlockProvider(true))
             .simpleItem()
             .register();
     public static final BlockEntry<PumpjackHeadBlock> PUMPJACK_HEAD = REGISTRATE.block("pumpjack_head", Material.METAL, PumpjackHeadBlock::new)
@@ -87,7 +82,6 @@ public static final BlockEntry<DieselGeneratorBlock> DIESEL_ENGINE = REGISTRATE.
             .properties(p -> p.sound(SoundType.NETHERITE_BLOCK))
             .properties(p -> p.noOcclusion())
             .properties(p -> p.strength(3f))
-            .blockstate(BlockStateGen.horizontalBlockProvider(true))
             .onRegister(movementBehaviour(new PumpjackHeadMovementBehaviour()))
             .simpleItem()
             .register();
@@ -96,7 +90,6 @@ public static final BlockEntry<DieselGeneratorBlock> DIESEL_ENGINE = REGISTRATE.
             .properties(p -> p.sound(SoundType.NETHERITE_BLOCK))
             .properties(p -> p.noOcclusion())
             .properties(p -> p.strength(3f))
-            .blockstate(BlockStateGen.horizontalBlockProvider(true))
             .onRegister(movementBehaviour(new PumpjackBearingBMovementBehaviour()))
             .register();
     public static final BlockEntry<PumpjackHoleBlock> PUMPJACK_HOLE = REGISTRATE.block("pumpjack_hole", Material.METAL, PumpjackHoleBlock::new)
@@ -105,14 +98,13 @@ public static final BlockEntry<DieselGeneratorBlock> DIESEL_ENGINE = REGISTRATE.
             .onRegister(assignDataBehaviour(new OilAmountDisplaySource()))
             .properties(p -> p.noOcclusion())
             .properties(p -> p.strength(3f))
-            .blockstate(BlockStateGen.horizontalBlockProvider(true))
+            .simpleItem()
             .register();
     public static final BlockEntry<PumpjackCrankBlock> PUMPJACK_CRANK = REGISTRATE.block("pumpjack_crank", Material.METAL, PumpjackCrankBlock::new)
             .properties(p -> p.color(MaterialColor.COLOR_CYAN))
             .properties(p -> p.sound(SoundType.NETHERITE_BLOCK))
             .properties(p -> p.noOcclusion())
             .properties(p -> p.strength(3f))
-            .blockstate(BlockStateGen.horizontalBlockProvider(true))
             .simpleItem()
             .register();
 
@@ -121,7 +113,6 @@ public static final BlockEntry<DieselGeneratorBlock> DIESEL_ENGINE = REGISTRATE.
             .properties(p -> p.sound(SoundType.NETHERITE_BLOCK))
             .properties(p -> p.noOcclusion())
             .properties(p -> p.strength(3f))
-            .blockstate(BlockStateGen.horizontalBlockProvider(true))
             .item(CanisterBlockItem::new)
             .transform(customItemModel())
             .register();
@@ -134,7 +125,23 @@ public static final BlockEntry<DieselGeneratorBlock> DIESEL_ENGINE = REGISTRATE.
             .onRegister(CreateRegistrate.blockModel(() -> DistillationTankModel::new))
             .register();
 
+    public static final BlockEntry<OilBarrelBlock> OIL_BARREL = REGISTRATE.block("oil_barrel", Material.METAL, OilBarrelBlock::new)
+            .initialProperties(SharedProperties::copperMetal)
+            .properties(BlockBehaviour.Properties::noOcclusion)
+            .properties(p -> p.isRedstoneConductor((p1, p2, p3) -> true))
+            .transform(pickaxeOnly())
+            .onRegister(CreateRegistrate.connectedTextures(OilBarrelCTBehavior::new))
+            .item(MultiBlockContainerBlockItem::new)
+            .build()
+            .register();
+
     public static final BlockEntry<RotatedPillarBlock> CHIP_WOOD_BLOCK = REGISTRATE.block("chip_wood_block", Material.WOOD, RotatedPillarBlock::new)
+            .initialProperties(() -> Blocks.OAK_PLANKS)
+            .properties(p -> p)
+            .simpleItem()
+            .register();
+
+    public static final BlockEntry<RotatedPillarBlock> CHIP_WOOD_BEAM = REGISTRATE.block("chip_wood_beam", Material.WOOD, RotatedPillarBlock::new)
             .initialProperties(() -> Blocks.OAK_PLANKS)
             .properties(p -> p)
             .simpleItem()
@@ -157,7 +164,7 @@ public static final BlockEntry<DieselGeneratorBlock> DIESEL_ENGINE = REGISTRATE.
             .properties(p -> p.sound(SoundType.STONE))
             .properties(p -> p.noOcclusion())
             .properties(p -> p.strength(3f))
-            .properties(p -> p.speedFactor(1.125f))
+            .properties(p -> p.speedFactor(1.25f))
             .simpleItem()
             .register();
     public static final BlockEntry<SlabBlock> ASPHALT_SLAB = REGISTRATE.block("asphalt_slab", Material.STONE, SlabBlock::new)
@@ -165,7 +172,7 @@ public static final BlockEntry<DieselGeneratorBlock> DIESEL_ENGINE = REGISTRATE.
             .properties(p -> p.sound(SoundType.STONE))
             .properties(p -> p.noOcclusion())
             .properties(p -> p.strength(3f))
-            .properties(p -> p.speedFactor(1.125f))
+            .properties(p -> p.speedFactor(1.25f))
             .simpleItem()
             .register();
 
@@ -174,7 +181,7 @@ public static final BlockEntry<DieselGeneratorBlock> DIESEL_ENGINE = REGISTRATE.
             .properties(p -> p.sound(SoundType.STONE))
             .properties(p -> p.noOcclusion())
             .properties(p -> p.strength(3f))
-            .properties(p -> p.speedFactor(1.125f))
+            .properties(p -> p.speedFactor(1.25f))
             .simpleItem()
             .register();
 

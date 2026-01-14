@@ -2,6 +2,7 @@ package com.jesz.createdieselgenerators.items;
 
 import com.jesz.createdieselgenerators.CreateDieselGenerators;
 import com.jesz.createdieselgenerators.config.ConfigRegistry;
+import com.jesz.createdieselgenerators.other.FuelTypeManager;
 import com.simibubi.create.AllEnchantments;
 import com.simibubi.create.content.equipment.armor.CapacityEnchantment;
 import com.simibubi.create.foundation.item.render.SimpleCustomRenderer;
@@ -27,6 +28,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.context.UseOnContext;
+import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.level.Explosion;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.*;
@@ -64,7 +66,7 @@ public class LighterItem extends Item implements CapacityEnchantment.ICapacityEn
                 components.add(Component.translatable("createdieselgenerators.tooltip.empty").withStyle(ChatFormatting.GRAY));
                 return;
             }
-            components.add(Lang.fluidName(fStack).component().withStyle(ChatFormatting.GRAY).append(" ").append(Lang.number(fStack.getAmount()).style(ChatFormatting.GOLD).component()).append(Component.translatable("create.generic.unit.millibuckets").withStyle(ChatFormatting.GOLD)).append(Component.literal(" / ")).append(Lang.number(100 + stack.getEnchantmentLevel(AllEnchantments.CAPACITY.get())*50).style(ChatFormatting.GRAY).component()).append(Component.translatable("create.generic.unit.millibuckets").withStyle(ChatFormatting.GRAY)));
+            components.add(Lang.fluidName(fStack).component().withStyle(ChatFormatting.GRAY).append(" ").append(Lang.number(fStack.getAmount()).style(ChatFormatting.GOLD).component()).append(Component.translatable("create.generic.unit.millibuckets").withStyle(ChatFormatting.GOLD)).append(Component.literal(" / ")).append(Lang.number(ConfigRegistry.TOOL_CAPACITY.get() + stack.getEnchantmentLevel(AllEnchantments.CAPACITY.get())*ConfigRegistry.TOOL_CAPACITY_ENCHANTMENT.get()).style(ChatFormatting.GRAY).component()).append(Component.translatable("create.generic.unit.millibuckets").withStyle(ChatFormatting.GRAY)));
             return;
         }
         components.add(Component.translatable("createdieselgenerators.tooltip.empty").withStyle(ChatFormatting.GRAY));
@@ -72,6 +74,14 @@ public class LighterItem extends Item implements CapacityEnchantment.ICapacityEn
     }
     @Override
     public boolean isEnchantable(ItemStack stack) { return true; }
+
+    @Override
+    public boolean canApplyAtEnchantingTable(ItemStack stack, Enchantment enchantment) {
+        if(enchantment == AllEnchantments.CAPACITY.get())
+            return true;
+        return super.canApplyAtEnchantingTable(stack, enchantment);
+    }
+
     @Override
     public int getBarColor(ItemStack stack) {
         return 0xEFEFEF;
@@ -82,7 +92,7 @@ public class LighterItem extends Item implements CapacityEnchantment.ICapacityEn
         if(stack.getTag() != null) {
             CompoundTag tankCompound = stack.getTag().getCompound("Fluid");
             FluidStack fStack = FluidStack.loadFluidStackFromNBT(tankCompound);
-            if(CreateDieselGenerators.getGeneratedSpeed(fStack) == 0 && stack.getTag().getInt("Type") == 2){
+            if(FuelTypeManager.getGeneratedSpeed(fStack.getFluid()) == 0 && stack.getTag().getInt("Type") == 2){
                 stack.getTag().putInt("Type", 1);
             }
 
@@ -107,8 +117,8 @@ public class LighterItem extends Item implements CapacityEnchantment.ICapacityEn
             }
             CompoundTag tankCompound = stackInHand.getTag().getCompound("Fluid");
             FluidStack fStack = FluidStack.loadFluidStackFromNBT(tankCompound);
-            tag.putInt("Type", CreateDieselGenerators.getGeneratedSpeed(fStack) == 0 ? 1 : 2);
-            if(CreateDieselGenerators.getGeneratedSpeed(fStack) != 0 && stackInHand.getTag().getInt("Type") == 2){
+            tag.putInt("Type", FuelTypeManager.getGeneratedSpeed(fStack.getFluid()) == 0 ? 1 : 2);
+            if(FuelTypeManager.getGeneratedSpeed(fStack.getFluid()) != 0 && stackInHand.getTag().getInt("Type") == 2){
                 fStack.setAmount(fStack.getAmount()-1);
                 fStack.writeToNBT(stackInHand.getTag().getCompound("Fluid"));
             }
@@ -137,13 +147,13 @@ public class LighterItem extends Item implements CapacityEnchantment.ICapacityEn
 
                     if (tank == null)
                         return use(context.getLevel(), context.getPlayer(), context.getHand()).getResult();
-                    if (CreateDieselGenerators.getGeneratedSpeed(tank.getFluidInTank(0)) != 0) {
+                    if (FuelTypeManager.getGeneratedSpeed(tank.getFluidInTank(0).getFluid()) != 0) {
                         level.setBlock(blockpos, Blocks.AIR.defaultBlockState(), 3);
                         level.explode(null, null, null, blockpos.getX(), blockpos.getY(), blockpos.getZ(), 3 + ((float) tank.getFluidInTank(0).getAmount() / 500), true, Explosion.BlockInteraction.BREAK);
 
                         CompoundTag tankCompound = itemstack.getTag().getCompound("Fluid");
                         FluidStack fStack = FluidStack.loadFluidStackFromNBT(tankCompound);
-                        if (CreateDieselGenerators.getGeneratedSpeed(fStack) != 0 && itemstack.getTag().getInt("Type") == 2) {
+                        if (FuelTypeManager.getGeneratedSpeed(fStack.getFluid()) != 0 && itemstack.getTag().getInt("Type") == 2) {
                             fStack.setAmount(fStack.getAmount() - 1);
                             fStack.writeToNBT(itemstack.getTag().getCompound("Fluid"));
                         }
@@ -166,7 +176,7 @@ public class LighterItem extends Item implements CapacityEnchantment.ICapacityEn
                     itemstack.getTag().putInt("Type", 1);
                     return InteractionResult.FAIL;
                 }
-                if(CreateDieselGenerators.getGeneratedSpeed(fStack) != 0 && itemstack.getTag().getInt("Type") == 2){
+                if(FuelTypeManager.getGeneratedSpeed(fStack.getFluid()) != 0 && itemstack.getTag().getInt("Type") == 2){
                     fStack.setAmount(fStack.getAmount()-1);
                     fStack.writeToNBT(itemstack.getTag().getCompound("Fluid"));
                 }
@@ -204,14 +214,14 @@ public class LighterItem extends Item implements CapacityEnchantment.ICapacityEn
             return 0;
         CompoundTag tankCompound = stack.getTag().getCompound("Fluid");
 
-        return Math.round(13 * Mth.clamp(FluidStack.loadFluidStackFromNBT(tankCompound).getAmount()/((float)100 + stack.getEnchantmentLevel(AllEnchantments.CAPACITY.get())*50), 0, 1));
+        return Math.round(13 * Mth.clamp(FluidStack.loadFluidStackFromNBT(tankCompound).getAmount()/((float)ConfigRegistry.TOOL_CAPACITY.get() + stack.getEnchantmentLevel(AllEnchantments.CAPACITY.get())*ConfigRegistry.TOOL_CAPACITY_ENCHANTMENT.get()), 0, 1));
     }
 
     @Override
     public ICapabilityProvider initCapabilities(ItemStack stack, CompoundTag nbt) {
         if(!ModList.get().isLoaded("dungeons_libraries"))
-            return new FluidHandlerItemStack(stack, 100 + stack.getEnchantmentLevel(AllEnchantments.CAPACITY.get()) * 50);
-        return new FluidHandlerItemStack(stack, 100);
+            return new FluidHandlerItemStack(stack, ConfigRegistry.TOOL_CAPACITY.get() + stack.getEnchantmentLevel(AllEnchantments.CAPACITY.get()) * ConfigRegistry.TOOL_CAPACITY_ENCHANTMENT.get());
+        return new FluidHandlerItemStack(stack, ConfigRegistry.TOOL_CAPACITY.get());
     }
 
     @Override
